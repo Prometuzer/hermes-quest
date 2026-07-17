@@ -129,11 +129,21 @@ func _enter_attack() -> void:
 	state = State.ATTACK
 	attack_cd = ATTACK_COOLDOWN
 	sprite.play("attack")
-	await get_tree().create_timer(0.2).timeout
+	var tree := get_tree()
+	if tree == null:
+		return
+	await tree.create_timer(0.2).timeout
+	if not is_inside_tree():
+		return
 	if player_ref and is_instance_valid(player_ref) and global_position.distance_to(player_ref.global_position) < ATTACK_RANGE + 8:
 		if player_ref.has_method("take_damage"):
 			player_ref.take_damage(1, global_position)
-	await get_tree().create_timer(0.3).timeout
+	tree = get_tree()
+	if tree == null:
+		return
+	await tree.create_timer(0.3).timeout
+	if not is_inside_tree():
+		return
 	if state != State.DEAD and state != State.HURT:
 		state = State.CHASE
 
@@ -155,7 +165,12 @@ func take_damage(amount: int, from_pos: Vector2) -> void:
 		velocity = kb_dir * 150
 		sprite.play("hurt")
 		sprite.modulate = Color(1, 0.4, 0.4, 1)
-		await get_tree().create_timer(0.15).timeout
+		var tree := get_tree()
+		if tree == null:
+			return
+		await tree.create_timer(0.15).timeout
+		if not is_inside_tree():
+			return
 		sprite.modulate = Color.WHITE
 
 func _die() -> void:
@@ -168,7 +183,12 @@ func _die() -> void:
 	if $HitArea/CollisionShape2D:
 		$HitArea/CollisionShape2D.set_deferred("disabled", true)
 	# Attend la fin de l'anim death avant de disparaître
-	await get_tree().create_timer(0.8).timeout
+	var tree := get_tree()
+	if tree == null:
+		return
+	await tree.create_timer(0.8).timeout
+	if not is_inside_tree():
+		return
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.4)
 	tw.tween_callback(queue_free)
