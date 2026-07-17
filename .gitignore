@@ -1,0 +1,32 @@
+# Godot
+.godot/
+*.import
+export_presets.cfg
+/builds/
+*.exe
+*.app
+*.x86_64
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+
+# Node (si jamais)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

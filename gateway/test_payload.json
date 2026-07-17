@@ -1,0 +1,8 @@
+{
+  "message": "Salut Hermes ! Je viens d'arriver dans la forêt. Qu'est-ce que je dois faire ?",
+  "context": {
+    "health": 6,
+    "enemies_defeated": 0,
+    "lore_fragments": 0
+  }
+}
