@@ -33,3 +33,6 @@ Thumbs.db
 *.log
 web/dist/
 web/node_modules/
+.vercel
+.env*
+!.env.example

@@ -47,7 +47,7 @@ export function Pricing() {
             <ul className="mt-6 space-y-2 text-sm text-verdant-100">
               <li className="flex gap-2"><span className="text-soul-cyan">✦</span> Tous les avantages Découverte</li>
               <li className="flex gap-2"><span className="text-soul-cyan">✦</span> Builds premium (Mac / Win / Linux)</li>
-              <li className="flex gap-2"><span className="text-soul-cyan">✦</span> Écho étendu (compagnon IA illimité)</li>
+              <li className="flex gap-2"><span className="text-soul-cyan">✦</span> Écho étendu (sessions plus longues, usage raisonnable)</li>
               <li className="flex gap-2"><span className="text-soul-cyan">✦</span> Journaux de développement exclusifs</li>
               <li className="flex gap-2"><span className="text-soul-cyan">✦</span> Cosmétiques Fondateur (skin Hermes exclusif)</li>
               <li className="flex gap-2"><span className="text-soul-cyan">✦</span> Ton nom au générique des fondateurs</li>
@@ -119,11 +119,11 @@ export function FAQ() {
     },
     {
       q: "Le compagnon IA est-il un vrai agent ou un script ?",
-      a: "Un vrai agent. Il est propulsé par Hermes Agent, un framework open-source. Chaque message que tu envoies déclenche une vraie inférence LLM avec le contexte de ta partie. Aucune donnée personnelle n'est stockée.",
+      a: "Un vrai agent contextuel propulsé par Hermes Agent. Le profil public ne reçoit ni terminal, ni fichiers, ni secrets. Le compte conserve l'email et l'état d'abonnement nécessaires ; les messages Gateway devront suivre une politique de conservation minimale avant la bêta publique.",
     },
     {
       q: "Pourquoi devenir Membre Fondateur ?",
-      a: "Pour soutenir le développement indépendant du projet, accéder aux builds premium (binaires compilés), à l'Écho étendu (compagnon illimité), aux journaux de dev et à un skin Hermes exclusif.",
+      a: "Pour soutenir le développement indépendant du projet, accéder aux builds premium, à des sessions Écho plus longues dans des limites raisonnables, aux journaux de dev et à un skin Hermes exclusif.",
     },
     {
       q: "Mes données sont-elles en sécurité ?",

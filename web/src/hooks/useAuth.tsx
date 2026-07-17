@@ -10,24 +10,19 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// --- Mock storage pour quand Supabase n'est pas configuré (dev/tests) ---
-const MOCK_KEY = "hermes_mock_users";
-const MOCK_SESSION = "hermes_mock_session";
 interface MockUser { email: string; password: string; id: string; }
-
-function getMockUsers(): MockUser[] {
-  try { return JSON.parse(localStorage.getItem(MOCK_KEY) || "[]"); }
-  catch { return []; }
-}
-function setMockUsers(u: MockUser[]) { localStorage.setItem(MOCK_KEY, JSON.stringify(u)); }
+const TEST_MODE = import.meta.env.MODE === "test";
+const mockUsers: MockUser[] = [];
+let mockSession: MockUser | null = null;
 
 /** Construit un faux User Supabase à partir d'un mock. */
 function toMockUser(u: MockUser): User {
@@ -50,16 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase) {
-      // Mode mock : restore session
-      try {
-        const raw = localStorage.getItem(MOCK_SESSION);
-        if (raw) {
-          const mu: MockUser = JSON.parse(raw);
-          const user = toMockUser(mu);
-          setState({ user, session: { user } as unknown as Session, loading: false, configured: false });
-          return;
-        }
-      } catch { /* ignore */ }
+      if (TEST_MODE && mockSession) {
+        const user = toMockUser(mockSession);
+        setState({ user, session: { user } as unknown as Session, loading: false, configured: false });
+        return;
+      }
       setState({ user: null, session: null, loading: false, configured: false });
       return;
     }
@@ -80,27 +70,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, displayName = "") => {
     if (!supabase) {
-      const users = getMockUsers();
-      if (users.find(u => u.email === email)) {
+      if (!TEST_MODE) return { error: "La création de compte n’est pas encore activée sur cette preview." };
+      if (mockUsers.find(u => u.email === email)) {
         return { error: "Un compte existe déjà avec cet email (mode démo)." };
       }
       const u: MockUser = { email, password, id: crypto.randomUUID() };
-      users.push(u);
-      setMockUsers(users);
+      mockUsers.push(u);
       return { error: null };
     }
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name: displayName.trim() },
+        emailRedirectTo: `${window.location.origin}/connexion?confirmed=1`,
+      },
+    });
     return { error: error?.message ?? null };
   };
 
   const signIn = async (email: string, password: string) => {
     if (!supabase) {
-      const users = getMockUsers();
-      const u = users.find(u => u.email === email && u.password === password);
+      if (!TEST_MODE) return { error: "La connexion n’est pas encore activée sur cette preview." };
+      const u = mockUsers.find(u => u.email === email && u.password === password);
       if (!u) return { error: "Email ou mot de passe invalide (mode démo)." };
-      localStorage.setItem(MOCK_SESSION, JSON.stringify(u));
+      mockSession = u;
       const user = toMockUser(u);
       setState({ user, session: { user } as unknown as Session, loading: false, configured: false });
       return { error: null };
@@ -111,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     if (!supabase) {
-      localStorage.removeItem(MOCK_SESSION);
+      mockSession = null;
       setState({ user: null, session: null, loading: false, configured: false });
       return;
     }
@@ -120,16 +116,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string) => {
     if (!supabase) {
-      return { error: null };
+      return { error: TEST_MODE ? null : "La réinitialisation n’est pas encore activée sur cette preview." };
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}/nouveau-mot-de-passe`,
     });
     return { error: error?.message ?? null };
   };
 
+  const updatePassword = async (password: string) => {
+    if (!supabase) return { error: TEST_MODE ? null : "La réinitialisation n’est pas encore activée sur cette preview." };
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error: error?.message ?? null };
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, signUp, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ ...state, signUp, signIn, signOut, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

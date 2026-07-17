@@ -31,10 +31,13 @@ export interface Database {
           id: string;
           user_id: string;       // = auth.uid()
           stripe_customer_id: string;
-          stripe_subscription_id: string | null;
-          status: "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid";
+          stripe_subscription_id: string;
+          status: "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid" | "paused";
           price_id: string | null;
+          current_period_start: string | null;
           current_period_end: string | null;
+          cancel_at_period_end: boolean;
+          canceled_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -42,10 +45,13 @@ export interface Database {
           id?: string;
           user_id: string;
           stripe_customer_id: string;
-          stripe_subscription_id?: string | null;
+          stripe_subscription_id: string;
           status: Database["public"]["Tables"]["hermes_subscriptions"]["Row"]["status"];
           price_id?: string | null;
+          current_period_start?: string | null;
           current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

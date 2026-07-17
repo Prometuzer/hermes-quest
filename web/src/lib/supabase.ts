@@ -23,6 +23,6 @@ export const supabase = isSupabaseConfigured
 if (!isSupabaseConfigured && import.meta.env.DEV) {
   console.warn(
     "[Supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY non configurés. " +
-      "L'authentification utilisera le mode mock."
+      "L'authentification reste désactivée hors tests."
   );
 }

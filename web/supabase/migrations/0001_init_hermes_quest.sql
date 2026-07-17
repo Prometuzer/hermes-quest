@@ -1,109 +1,133 @@
--- ============================================================================
--- HERMES QUEST — Migration additive (à appliquer sur le projet Supabase)
--- Tables namespacées hermes_* pour coexister avec d'autres projets du compte.
--- Idempotente : safe de rejouer. Aucun DROP.
--- ============================================================================
+-- Hermes Quest — migration additive, idempotente et namespacée.
 
--- ----------------------------------------------------------------------------
--- 1. PROFILES — données publiques du joueur
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.hermes_profiles (
-    id              UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    display_name    TEXT,
-    avatar_url      TEXT,
-    bio             TEXT,
-    founded_member  BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+create table if not exists public.hermes_profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  display_name text check (char_length(display_name) between 2 and 30),
+  avatar_url text,
+  bio text check (char_length(bio) <= 500),
+  founded_member boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
--- Auto-création du profil à l'inscription
-CREATE OR REPLACE FUNCTION public.hermes_handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO public.hermes_profiles (id, display_name)
-    VALUES (NEW.id, split_part(NEW.email, '@', 1))
-    ON CONFLICT (id) DO NOTHING;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS hermes_on_auth_user_created ON auth.users;
-CREATE TRIGGER hermes_on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION public.hermes_handle_new_user();
-
--- ----------------------------------------------------------------------------
--- 2. SUBSCRIPTIONS — miroir de l'état Stripe (mis à jour par le webhook)
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.hermes_subscriptions (
-    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id                 UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    stripe_customer_id      TEXT NOT NULL,
-    stripe_subscription_id  TEXT UNIQUE,
-    status                  TEXT NOT NULL CHECK (
-        status IN ('incomplete','incomplete_expired','trialing','active','past_due','canceled','unpaid')
-    ),
-    price_id                TEXT,
-    current_period_end      TIMESTAMPTZ,
-    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+create table if not exists public.hermes_stripe_customers (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  stripe_customer_id text not null unique,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_hermes_subs_user_id ON public.hermes_subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_hermes_subs_customer ON public.hermes_subscriptions(stripe_customer_id);
+create table if not exists public.hermes_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  stripe_customer_id text not null,
+  stripe_subscription_id text not null unique,
+  status text not null check (status in (
+    'incomplete', 'incomplete_expired', 'trialing', 'active',
+    'past_due', 'canceled', 'unpaid', 'paused'
+  )),
+  price_id text,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at_period_end boolean not null default false,
+  canceled_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
--- ----------------------------------------------------------------------------
--- 3. ROW LEVEL SECURITY — chaque joueur ne voit QUE ses propres lignes
--- ----------------------------------------------------------------------------
+alter table public.hermes_subscriptions add column if not exists current_period_start timestamptz;
+alter table public.hermes_subscriptions add column if not exists cancel_at_period_end boolean not null default false;
+alter table public.hermes_subscriptions add column if not exists canceled_at timestamptz;
 
--- PROFILES
-ALTER TABLE public.hermes_profiles ENABLE ROW LEVEL SECURITY;
+create index if not exists idx_hermes_subs_user_id on public.hermes_subscriptions(user_id);
+create index if not exists idx_hermes_subs_customer on public.hermes_subscriptions(stripe_customer_id);
+create index if not exists idx_hermes_subs_status on public.hermes_subscriptions(status);
 
-DROP POLICY IF EXISTS "hermes_profiles_select_own" ON public.hermes_profiles;
-CREATE POLICY "hermes_profiles_select_own" ON public.hermes_profiles
-    FOR SELECT USING (auth.uid() = id);
+alter table public.hermes_profiles enable row level security;
+alter table public.hermes_stripe_customers enable row level security;
+alter table public.hermes_subscriptions enable row level security;
 
-DROP POLICY IF EXISTS "hermes_profiles_update_own" ON public.hermes_profiles;
-CREATE POLICY "hermes_profiles_update_own" ON public.hermes_profiles
-    FOR UPDATE USING (auth.uid() = id);
+do $$ begin
+  create policy "hermes_profiles_select_own" on public.hermes_profiles
+    for select to authenticated using ((select auth.uid()) = id);
+exception when duplicate_object then null; end $$;
 
-DROP POLICY IF EXISTS "hermes_profiles_insert_own" ON public.hermes_profiles;
-CREATE POLICY "hermes_profiles_insert_own" ON public.hermes_profiles
-    FOR INSERT WITH CHECK (auth.uid() = id);
+do $$ begin
+  create policy "hermes_profiles_update_own" on public.hermes_profiles
+    for update to authenticated
+    using ((select auth.uid()) = id)
+    with check ((select auth.uid()) = id);
+exception when duplicate_object then null; end $$;
 
--- SUBSCRIPTIONS
-ALTER TABLE public.hermes_subscriptions ENABLE ROW LEVEL SECURITY;
+do $$ begin
+  create policy "hermes_subs_select_own" on public.hermes_subscriptions
+    for select to authenticated using ((select auth.uid()) = user_id);
+exception when duplicate_object then null; end $$;
 
-DROP POLICY IF EXISTS "hermes_subs_select_own" ON public.hermes_subscriptions;
-CREATE POLICY "hermes_subs_select_own" ON public.hermes_subscriptions
-    FOR SELECT USING (auth.uid() = user_id);
+-- Aucune policy sur hermes_stripe_customers : service-role uniquement.
+-- Aucune écriture client sur les abonnements : webhook signé uniquement.
+revoke all on table public.hermes_stripe_customers from anon, authenticated;
+revoke insert, update, delete on table public.hermes_subscriptions from anon, authenticated;
+revoke update on table public.hermes_profiles from authenticated;
+grant select on table public.hermes_profiles, public.hermes_subscriptions to authenticated;
+grant update (display_name, avatar_url, bio, updated_at) on table public.hermes_profiles to authenticated;
 
--- Insert/update uniquement via service_role (webhook serveur) — pas depuis le client.
--- Le client ne peut que SELECT.
+create or replace function public.hermes_handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  insert into public.hermes_profiles (id, display_name)
+  values (
+    new.id,
+    coalesce(nullif(trim(new.raw_user_meta_data ->> 'display_name'), ''), split_part(new.email, '@', 1))
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
 
--- ----------------------------------------------------------------------------
--- 4. UPDATED_AT triggers
--- ----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.hermes_set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+create or replace function public.hermes_set_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
 
-DROP TRIGGER IF EXISTS hermes_profiles_updated_at ON public.hermes_profiles;
-CREATE TRIGGER hermes_profiles_updated_at
-    BEFORE UPDATE ON public.hermes_profiles
-    FOR EACH ROW EXECUTE FUNCTION public.hermes_set_updated_at();
+do $$ begin
+  if not exists (
+    select 1 from pg_trigger
+    where tgname = 'hermes_on_auth_user_created' and tgrelid = 'auth.users'::regclass
+  ) then
+    create trigger hermes_on_auth_user_created
+      after insert on auth.users
+      for each row execute function public.hermes_handle_new_user();
+  end if;
+end $$;
 
-DROP TRIGGER IF EXISTS hermes_subs_updated_at ON public.hermes_subscriptions;
-CREATE TRIGGER hermes_subs_updated_at
-    BEFORE UPDATE ON public.hermes_subscriptions
-    FOR EACH ROW EXECUTE FUNCTION public.hermes_set_updated_at();
+do $$ begin
+  if not exists (
+    select 1 from pg_trigger
+    where tgname = 'hermes_profiles_updated_at' and tgrelid = 'public.hermes_profiles'::regclass
+  ) then
+    create trigger hermes_profiles_updated_at
+      before update on public.hermes_profiles
+      for each row execute function public.hermes_set_updated_at();
+  end if;
+end $$;
 
--- ============================================================================
--- FIN — Migration hermes-quest v1
--- Pour annuler : DROP TABLE public.hermes_profiles, public.hermes_subscriptions;
--- ============================================================================
+do $$ begin
+  if not exists (
+    select 1 from pg_trigger
+    where tgname = 'hermes_subs_updated_at' and tgrelid = 'public.hermes_subscriptions'::regclass
+  ) then
+    create trigger hermes_subs_updated_at
+      before update on public.hermes_subscriptions
+      for each row execute function public.hermes_set_updated_at();
+  end if;
+end $$;

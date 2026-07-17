@@ -1,9 +1,5 @@
-/**
- * Configuration Stripe côté client.
- * On n'importe la publishable key QUE pour rediriger vers Checkout/Portal.
- * Le secret (`sk_test_...`) reste serveur-only (API routes Vercel).
- */
-import { loadStripe, type Stripe } from "@stripe/stripe-js";
+/** Configuration Stripe côté client. Le secret reste serveur-only. */
+import { supabase } from "@/lib/supabase";
 
 const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
 
@@ -18,14 +14,6 @@ export function isStripeTestMode(): boolean {
 
 export const isStripeConfigured = Boolean(publishableKey);
 
-let _stripe: Promise<Stripe | null> | null = null;
-export function getStripe(): Promise<Stripe | null> {
-  if (!_stripe) {
-    _stripe = loadStripe(publishableKey || "");
-  }
-  return _stripe;
-}
-
 /** Appelle l'API route /api/checkout pour créer une session Checkout. */
 export async function createCheckoutSession(priceId: string): Promise<{ url?: string; error?: string }> {
   if (!isStripeTestMode()) {
@@ -36,9 +24,13 @@ export async function createCheckoutSession(priceId: string): Promise<{ url?: st
     };
   }
   try {
+    if (!supabase) return { error: "Le compte Supabase n’est pas configuré sur cette preview." };
+    const { data: authData } = await supabase.auth.getSession();
+    const token = authData.session?.access_token;
+    if (!token) return { error: "Connecte-toi avant de commencer l’essai." };
     const res = await fetch("/api/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ priceId }),
     });
     const data = await res.json();
@@ -55,7 +47,14 @@ export async function openCustomerPortal(): Promise<{ url?: string; error?: stri
     return { error: "Portail client indisponible en mode démo." };
   }
   try {
-    const res = await fetch("/api/portal", { method: "POST" });
+    if (!supabase) return { error: "Le compte Supabase n’est pas configuré sur cette preview." };
+    const { data: authData } = await supabase.auth.getSession();
+    const token = authData.session?.access_token;
+    if (!token) return { error: "Connecte-toi pour ouvrir le portail." };
+    const res = await fetch("/api/portal", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const data = await res.json();
     if (!res.ok) return { error: data.error || "Erreur lors de l'ouverture du portail." };
     return { url: data.url };

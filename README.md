@@ -25,7 +25,7 @@ Grâce au **Mode Gateway**, tu peux parler à **Écho**, la conscience du Codex,
 | Moteur de jeu | **Godot 4.3** | Le jeu, en GDScript |
 | Gateway pont | **Python + FastAPI** | Fait le lien entre le jeu et Hermes Agent |
 | Agent IA | **Hermes Agent** (Nous Research) | Moteur conversationnel isolé du bot développeur |
-| Landing page | **HTML/CSS/JS statique** | Page de présentation, style Dofus |
+| Portail Web | **React + Supabase + Stripe** | Landing, compte et abonnement test sécurisé |
 
 ---
 
@@ -50,6 +50,9 @@ hermes-quest/
 ├── landing/                   # Page web de présentation
 │   ├── index.html
 │   └── assets/
+├── web/                       # Portail React actuellement déployé sur Vercel
+├── api/                       # Checkout, Customer Portal et webhook Vercel
+├── web/supabase/migrations/   # Schéma de compte et abonnement avec RLS
 └── docs/                      # Documentation
 ```
 

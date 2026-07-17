@@ -24,6 +24,20 @@
   }
 }
 
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 1rem;
+  left: 1rem;
+  transform: translateY(-180%);
+  border-radius: .5rem;
+  background: #d4ff8a;
+  padding: .7rem 1rem;
+  color: #080f08;
+  font-weight: 800;
+}
+.skip-link:focus { transform: translateY(0); }
+
 @layer components {
   .container-quest {
     @apply mx-auto w-full max-w-6xl px-6;
@@ -81,3 +95,85 @@
   pointer-events: none;
 }
 @keyframes drift { to { background-position: 200% 200%; } }
+
+.hero-premium {
+  background:
+    radial-gradient(circle at 18% 45%, rgba(61,139,61,.25), transparent 32rem),
+    linear-gradient(115deg, #080f08 0%, #0c1e12 52%, #171121 100%);
+}
+
+.hero-premium::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .14;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+
+.hero-key-art {
+  overflow: hidden;
+  border: 1px solid rgba(130,255,217,.22);
+  border-radius: 48% 48% 1.5rem 1.5rem;
+  background: linear-gradient(145deg, #17331e, #171121);
+  box-shadow: 0 2rem 6rem rgba(0,0,0,.45), 0 0 4rem rgba(130,255,217,.08);
+}
+
+.hero-key-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(8,15,8,.7), transparent 45%);
+  pointer-events: none;
+}
+
+.hero-character-card {
+  position: absolute;
+  z-index: 2;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  min-width: 245px;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(130,255,217,.3);
+  border-left: 3px solid #82ffd9;
+  background: rgba(8,15,8,.78);
+  box-shadow: 0 1rem 3rem rgba(0,0,0,.35);
+  backdrop-filter: blur(12px);
+}
+
+.hero-character-card span {
+  display: block;
+  color: #82ffd9;
+  font: 700 .62rem/1.2 "JetBrains Mono", monospace;
+  letter-spacing: .11em;
+}
+
+.hero-character-card strong {
+  display: block;
+  margin-top: .35rem;
+  font: 800 1.6rem/1.1 "Cinzel", serif;
+}
+
+.hero-character-card small { color: #8ec98e; }
+
+.gallery-premium > div:first-child { grid-row: span 2; }
+
+.playtest-panel {
+  background:
+    radial-gradient(circle at 84% 15%, rgba(212,255,138,.14), transparent 20rem),
+    linear-gradient(135deg, rgba(31,71,31,.66), rgba(8,15,8,.9));
+  box-shadow: 0 1.8rem 5rem rgba(0,0,0,.25);
+}
+
+@media (max-width: 767px) {
+  .hero-premium { min-height: auto; }
+  .hero-key-art { min-height: 500px; border-radius: 14rem 14rem 1rem 1rem; }
+  .hero-character-card { right: .8rem; bottom: .8rem; min-width: 220px; }
+  .gallery-premium > div:first-child { grid-row: span 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}

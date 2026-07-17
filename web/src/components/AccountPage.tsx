@@ -71,7 +71,7 @@ export function AccountPage() {
           {!isPremiumMember && (
             <div className="mt-6 border-t border-verdant-800 pt-6">
               <h3 className="font-display text-lg text-soul-lime">Devenir Membre Fondateur</h3>
-              <p className="mt-1 text-sm text-verdant-300">9,99 €/mois · Builds premium · Écho étendu · Journaux de dev · Cosmétiques exclusifs</p>
+              <p className="mt-1 text-sm text-verdant-300">9,99 €/mois · 7 jours offerts · Builds premium · Écho étendu · Journaux de dev · Résiliable à tout moment</p>
               <button onClick={handleSubscribe} disabled={busy} className="btn-magenta mt-4">
                 {busy ? "Redirection..." : testMode ? "S'abonner (mode test)" : "Réserver ma place"}
               </button>

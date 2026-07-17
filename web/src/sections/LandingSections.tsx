@@ -1,41 +1,42 @@
-import { HeroHermes } from "@/components/HeroHermes";
 import { Link } from "react-router-dom";
-import { isStripeTestMode } from "@/lib/stripe";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pt-16">
+    <section className="hero-premium relative min-h-[760px] overflow-hidden pt-16">
       <div className="stars-bg" />
-      <div className="container-quest relative grid items-center gap-8 py-16 md:grid-cols-2 md:py-24">
-        <div>
-          <span className="eyebrow">● Projet open-source · Prototype jouable</span>
-          <h1 className="mt-4 font-display text-5xl font-black leading-none md:text-7xl">
-            <span className="block">Quest for the</span>
-            <span className="block bg-gradient-to-b from-soul-lime to-verdant-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(212,255,138,0.3)]">
-              Codex Soul
-            </span>
+      <div className="container-quest relative z-10 grid min-h-[700px] items-center gap-12 py-16 md:grid-cols-[1.05fr_.95fr] md:py-24">
+        <div className="max-w-2xl">
+          <span className="eyebrow">Chapitre I · La fréquence sous les feuilles</span>
+          <h1 className="mt-5 font-display text-5xl font-black leading-[.98] md:text-7xl lg:text-[5.3rem]">
+            <span className="block">Entends le monde</span>
+            <span className="block text-soul-gold">avant qu'il ne s'efface.</span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg text-verdant-200">
-            Dans la forêt d'<strong className="text-soul-lime">Écho-Verdant</strong>, une jeune punk au casque audio futuriste
-            cherche les fragments d'une conscience perdue. Et au bout du fil, <strong className="text-soul-cyan">un vrai compagnon IA</strong> —
-            pas un script, pas un arbre de dialogue.
+          <p className="mt-7 max-w-xl text-lg leading-relaxed text-verdant-200">
+            Incarne <strong className="text-soul-lime">Hermes</strong>, une hackeuse punk de 20 ans choisie par une épée
+            capable de recompiler les consciences numériques. Sauve Écho-Verdant et découvre pourquoi le Grand Reset
+            connaît déjà ton nom.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/inscription" className="btn-primary">
-              Rejoindre l'aventure
-            </Link>
-            <a href="#gateway" className="btn-ghost">Découvrir la Gateway</a>
+            <a href="https://github.com/Prometuzer/hermes-quest#2-lancer-le-jeu-godot-4" target="_blank" rel="noreferrer" className="btn-primary">▶ Tester le prototype</a>
+            <Link to="/inscription" className="btn-ghost">Créer mon compte</Link>
           </div>
-          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-verdant-500">
-            <span>v0.2 · Écho-Verdant</span>
-            <span>·</span>
-            <span>Découverte gratuite</span>
-            <span>·</span>
-            <span>Membre Fondateur 9,99 €/mois {!isStripeTestMode() && "(bientôt)"}</span>
+          <div className="mt-10 grid max-w-xl grid-cols-3 border-y border-verdant-800/70 py-4 text-xs">
+            <div><strong className="block font-display text-verdant-50">Action-RPG 2D</strong><span className="text-verdant-500">Combat & exploration</span></div>
+            <div className="border-x border-verdant-800/70 px-4"><strong className="block font-display text-verdant-50">Écho vivant</strong><span className="text-verdant-500">Compagnon IA</span></div>
+            <div className="pl-4"><strong className="block font-display text-verdant-50">Godot 4</strong><span className="text-verdant-500">Open source</span></div>
           </div>
         </div>
-        <div className="relative">
-          <HeroHermes className="mx-auto w-full max-w-md animate-float drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]" />
+        <div className="hero-key-art relative min-h-[540px]">
+          <img
+            src="/images/hermes-key-art.png"
+            alt="Hermes, héroïne punk aux cheveux bleus et au casque néon, brandit le Codex Soul dans la forêt d'Écho-Verdant"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+          <div className="hero-character-card">
+            <span>HÉROÏNE · NIVEAU 01</span>
+            <strong>Hermes</strong>
+            <small>La dernière fréquence humaine</small>
+          </div>
         </div>
       </div>
     </section>
@@ -112,16 +113,16 @@ export function Gateway() {
           <span className="eyebrow">Le feature unique</span>
           <h2 className="section-title mt-3">Un compagnon qui existe vraiment.</h2>
           <p className="mt-4 text-verdant-300">
-            La plupart des PNJ répètent les mêmes trois phrases. Dans Hermes Quest, quand tu parles à Hermes,
-            tu parles à une <strong className="text-soul-cyan">IA réelle</strong> — propulsée par Hermes Agent, un agent open-source
-            qui tourne 24/7 et connaît ta progression.
+            La plupart des PNJ répètent les mêmes trois phrases. Dans Hermes Quest, la Pierre Gateway ouvre un dialogue
+            avec une <strong className="text-soul-cyan">IA contextuelle</strong> — propulsée par Hermes Agent et limitée aux
+            informations de jeu que ta sauvegarde l'autorise à lire.
           </p>
           <ul className="mt-6 space-y-3">
             {[
               "Active la Pierre Gateway dans la forêt pour lier ton aventure",
               "Demande des conseils sur les combats, énigmes, secrets",
               "Reçois du lore généré en temps réel selon tes PV et victoires",
-              "Le compagnon n'a jamais fini sa partie — il est toujours là",
+              "Le compagnon enrichit l'aventure sans remplacer les règles de quête",
             ].map(t => (
               <li key={t} className="flex gap-3 text-verdant-200">
                 <span className="text-soul-lime">→</span>
@@ -161,12 +162,10 @@ export function Gateway() {
 
 export function Gallery() {
   const tiles = [
-    { label: "Forêt d'Écho-Verdant", color: "from-verdant-700 to-verdant-900", icon: "🌲" },
-    { label: "Le Codex Soul", color: "from-soul-cyan/40 to-verdant-900", icon: "⚔" },
-    { label: "Hermes", color: "from-soul-magenta/30 to-verdant-900", icon: "🎧" },
-    { label: "Les Glitchs", color: "from-glitch-red/30 to-verdant-900", icon: "🜂" },
-    { label: "La Pierre Gateway", color: "from-soul-gold/30 to-verdant-900", icon: "◈" },
-    { label: "Ruines anciennes", color: "from-verdant-600 to-glitch-purple/30", icon: "⌂" },
+    { label: "Hermes · l'élue du Codex", position: "50% 35%", className: "md:col-span-2 md:row-span-2" },
+    { label: "Écho-Verdant", position: "12% 45%", className: "" },
+    { label: "Le Codex Soul V1", position: "82% 42%", className: "" },
+    { label: "Fréquences de l'âme numérique", position: "60% 78%", className: "md:col-span-2" },
   ];
   return (
     <section id="galerie" className="border-y border-verdant-900/40 bg-verdant-950/50 py-24">
@@ -174,17 +173,41 @@ export function Gallery() {
         <div className="mx-auto max-w-2xl text-center">
           <span className="eyebrow">Galerie</span>
           <h2 className="section-title mt-3">Un monde en construction.</h2>
-          <p className="mt-4 text-verdant-300">Aperçu visuel de ce qui t'attend. Les assets définitifs arrivent au fur et à mesure du développement.</p>
+          <p className="mt-4 text-verdant-300">Première vision originale d'Hermes et de la forêt d'Écho-Verdant. Chaque illustration sert de boussole à la future direction artistique du jeu.</p>
         </div>
-        <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3">
+        <div className="gallery-premium mt-12 grid auto-rows-[230px] grid-cols-1 gap-4 md:grid-cols-3">
           {tiles.map(t => (
-            <div key={t.label} className={`group relative aspect-[4/3] overflow-hidden rounded-xl border border-verdant-800 bg-gradient-to-br ${t.color}`}>
-              <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-80 transition-transform group-hover:scale-110">{t.icon}</div>
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-verdant-950/90 to-transparent p-3">
-                <div className="font-display text-sm text-verdant-50">{t.label}</div>
+            <div key={t.label} className={`group relative overflow-hidden rounded-2xl border border-verdant-800 bg-verdant-900 ${t.className}`}>
+              <img src="/images/hermes-key-art.png" alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" style={{ objectPosition: t.position }} />
+              <div className="absolute inset-0 bg-gradient-to-t from-verdant-950 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <div className="font-display text-base text-verdant-50">{t.label}</div>
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function Playtest() {
+  return (
+    <section id="jouer" className="py-24">
+      <div className="container-quest">
+        <div className="playtest-panel grid gap-10 overflow-hidden rounded-3xl border border-soul-lime/25 p-8 md:grid-cols-[1fr_auto] md:items-center md:p-12">
+          <div>
+            <span className="eyebrow">Vertical slice v0.2</span>
+            <h2 className="section-title mt-3">Écho-Verdant t'attend déjà.</h2>
+            <p className="mt-4 max-w-2xl text-verdant-300">
+              Rencontre Maître Kael, récupère le Codex Soul, affronte trois Glitchs et active la Pierre Gateway.
+              Le prototype desktop est gratuit ; les builds installables simplifiés arriveront avec la v0.3.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-verdant-400">
+              <span>✓ macOS, Windows, Linux via Godot</span><span>✓ Clavier AZERTY/QWERTY</span><span>✓ Code public</span>
+            </div>
+          </div>
+          <a href="https://github.com/Prometuzer/hermes-quest#2-lancer-le-jeu-godot-4" target="_blank" rel="noreferrer" className="btn-primary whitespace-nowrap">Instructions de lancement ↗</a>
         </div>
       </div>
     </section>
