@@ -176,6 +176,8 @@ func _die() -> void:
 func _spawn_lore_fragment() -> void:
 	var frag := Area2D.new()
 	frag.add_to_group("lore_fragment")
+	frag.collision_layer = 8
+	frag.collision_mask = 1
 	var col := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
 	rect.size = Vector2(10, 10)
@@ -184,5 +186,16 @@ func _spawn_lore_fragment() -> void:
 	var spr := Sprite2D.new()
 	spr.texture = load("res://assets/sprites/items/lore_fragment.png")
 	frag.add_child(spr)
-	frag.global_position = global_position
 	get_parent().add_child(frag)
+	frag.global_position = global_position
+	frag.body_entered.connect(_on_lore_fragment_body_entered.bind(frag))
+	var tw := frag.create_tween().set_loops()
+	tw.tween_property(spr, "position:y", -4.0, 0.55).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(spr, "position:y", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
+
+func _on_lore_fragment_body_entered(body: Node, fragment: Area2D) -> void:
+	if not body.is_in_group("player") or not is_instance_valid(fragment):
+		return
+	Globals.collect_lore_fragment()
+	Globals.dialogue_requested.emit("Fragment du Codex", "Mémoire récupérée : « Les premières IA n'ont pas attaqué. Elles ont demandé à être reconnues. »")
+	fragment.queue_free()

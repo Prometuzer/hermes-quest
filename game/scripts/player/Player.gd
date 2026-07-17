@@ -36,6 +36,7 @@ func _ready() -> void:
 	cam.make_current()
 	_build_sprite_frames()
 	sprite.play("idle_down")
+	Globals.player_died.connect(_on_player_died)
 	# Centre le sprite sur le corps
 	sprite.offset = Vector2(0, -FRAME_SIZE / 2.0 + 8)
 
@@ -57,11 +58,11 @@ func _build_sprite_frames() -> void:
 	for dir_name in dir_rows.keys():
 		var row: int = dir_rows[dir_name]
 		# idle : frame 0
-		_add_frame_from_sheet(sf, tex, dir_name + "_idle", row, 0, h_frames, v_frames)
+		_add_frame_from_sheet(sf, tex, "idle_" + dir_name, row, 0, h_frames, v_frames)
 		# walk : frames 1 et 2 (boucle)
-		_add_anim_from_sheet(sf, tex, dir_name + "_walk", row, [1, 2, 1, 0], h_frames, v_frames, 8.0, true)
+		_add_anim_from_sheet(sf, tex, "walk_" + dir_name, row, [1, 2, 1, 0], h_frames, v_frames, 8.0, true)
 		# attack : frame 3
-		_add_frame_from_sheet(sf, tex, dir_name + "_attack", row, 3, h_frames, v_frames)
+		_add_frame_from_sheet(sf, tex, "attack_" + dir_name, row, 3, h_frames, v_frames)
 	
 	# hurt (ligne 4, frame 0)
 	_add_frame_from_sheet(sf, tex, "hurt", 4, 0, h_frames, v_frames)
@@ -99,6 +100,9 @@ func _add_anim_from_sheet(sf: SpriteFrames, _tex: Texture2D, anim_name: String,
 		sf.add_frame(anim_name, _frame_to_atlas(row, col, h_frames, v_frames))
 
 func _physics_process(delta: float) -> void:
+	if Globals.input_locked:
+		velocity = Vector2.ZERO
+		return
 	# Timers
 	if attack_cooldown > 0:
 		attack_cooldown -= delta
@@ -137,7 +141,10 @@ func _physics_process(delta: float) -> void:
 	
 	# Attaque
 	if Input.is_action_just_pressed("attack") and not is_attacking and attack_cooldown <= 0:
-		_start_attack()
+		if Globals.has_codex_soul:
+			_start_attack()
+		else:
+			Globals.dialogue_requested.emit("Hermes", "Quelque chose manque... la fréquence indique la cabane de Kael.")
 
 func _update_facing(v: Vector2) -> void:
 	if abs(v.x) > abs(v.y):
@@ -191,6 +198,12 @@ func _spawn_codex_slash() -> void:
 	for i in range(8):
 		var a := (i / 7.0) * PI - PI / 2.0
 		slash.add_point(Vector2(cos(a) * r, sin(a) * r))
+	slash.rotation = {
+		&"right": 0.0,
+		&"down": PI / 2.0,
+		&"left": PI,
+		&"up": -PI / 2.0,
+	}.get(facing, 0.0)
 	add_child(slash)
 	var tw := create_tween()
 	tw.tween_property(slash, "modulate:a", 0.0, 0.25)
@@ -218,3 +231,12 @@ func take_damage(amount: int = 1, from_pos: Vector2 = Vector2.ZERO) -> void:
 
 func heal(amount: int = 1) -> void:
 	Globals.heal(amount)
+
+func _on_player_died() -> void:
+	if Globals.input_locked:
+		return
+	Globals.input_locked = true
+	_play_anim("death")
+	await get_tree().create_timer(1.2).timeout
+	Globals.reset_run()
+	get_tree().reload_current_scene()
