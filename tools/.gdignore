@@ -1,0 +1,2 @@
+# Les fichiers de génération Python ne doivent pas être importés par Godot.
+# Ce fichier .gdignore signale à Godot d'ignorer ce dossier.
