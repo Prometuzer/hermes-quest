@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/GatewayPanel.tscn" id="2"]
 
 [node name="HUD" type="CanvasLayer"]
+script = ExtResource("1")
 
 [node name="Margin" type="MarginContainer" parent="."]
 anchors_preset = 15
@@ -35,12 +36,23 @@ size_flags_horizontal = 3
 [node name="EnemiesCount" type="Label" parent="Margin/VBox/TopBar"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.83, 1, 0.54, 1)
-text = "IA purged: 0"
+text = "Glitchs: 0"
+
+[node name="LoreCount" type="Label" parent="Margin/VBox/TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.53, 0.8, 1, 1)
+text = "Fragments: 0"
 
 [node name="GatewayStatus" type="Label" parent="Margin/VBox/TopBar"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
 text = "○ LINK INACTIVE"
+
+[node name="QuestLabel" type="Label" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.45, 1)
+theme_override_font_sizes/font_size = 14
+text = "Trouve Maître Kael près du feu central."
 
 [node name="Spacer2" type="Control" parent="Margin/VBox"]
 layout_mode = 2
@@ -54,6 +66,48 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 0.8)
 theme_override_font_sizes/font_size = 12
 text = "[ZQSD] move  [J/Space] attack  [E] interact  [T] talk to Hermes"
+
+[node name="InteractionHint" type="Label" parent="Margin/VBox/BottomBar"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.83, 1, 0.54, 1)
+theme_override_font_sizes/font_size = 14
+text = "[E] Interagir"
+horizontal_alignment = 2
+
+[node name="DialoguePanel" type="PanelContainer" parent="."]
+visible = false
+anchors_preset = 12
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 180.0
+offset_top = -176.0
+offset_right = -180.0
+offset_bottom = -54.0
+
+[node name="Margin" type="MarginContainer" parent="DialoguePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="DialoguePanel/Margin"]
+layout_mode = 2
+
+[node name="Speaker" type="Label" parent="DialoguePanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.83, 1, 0.54, 1)
+theme_override_font_sizes/font_size = 16
+text = "Kael"
+
+[node name="Text" type="Label" parent="DialoguePanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.94, 0.9, 1)
+theme_override_font_sizes/font_size = 14
+text = "Dialogue"
+autowrap_mode = 2
 
 [node name="GatewayPanel" parent="." instance=ExtResource("2")]
 visible = false

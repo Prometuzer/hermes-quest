@@ -2,8 +2,8 @@
 ## Charge la scène Forest + instancie le HUD par-dessus.
 extends Node2D
 
-@onready var forest: Node2D = $Forest
-@onready var hud: CanvasLayer = $HUD
+@onready var forest = $Forest
+@onready var hud: HermesHUD = $HUD
 
 func _ready() -> void:
 	# Wire les signaux globaux vers le HUD

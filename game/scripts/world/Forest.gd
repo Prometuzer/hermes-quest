@@ -6,6 +6,9 @@ const WORLD_W: int = 80
 const WORLD_H: int = 80
 const TILE_SIZE: int = 16
 const PLAYER_SPAWN: Vector2 = Vector2(WORLD_W * TILE_SIZE / 2.0, WORLD_H * TILE_SIZE / 2.0)
+const KAEL_POSITION: Vector2 = PLAYER_SPAWN + Vector2(72, -48)
+const GATEWAY_STONE_POSITION: Vector2 = PLAYER_SPAWN + Vector2(220, 0)
+const INTERACTION_RANGE: float = 38.0
 
 enum T {
 	GRASS_A = 0, GRASS_B = 1, PATH = 2, TREE = 3,
@@ -16,10 +19,13 @@ enum T {
 @onready var tilemap: TileMap = $TileMap
 @onready var y_sort_root: Node2D = $YSortRoot
 @onready var player: CharacterBody2D = $YSortRoot/Player
+@onready var kael: StaticBody2D = $YSortRoot/Kael
+@onready var gateway_stone: StaticBody2D = $YSortRoot/GatewayStone
 @onready var enemies_container: Node2D = $YSortRoot/Enemies
 @onready var mushrooms_container: Node2D = $YSortRoot/Mushrooms
 
 var map_data: Array = []
+var _nearby_interaction: StringName = &""
 
 func _ready() -> void:
 	_build_tileset()
@@ -28,7 +34,69 @@ func _ready() -> void:
 	_spawn_enemies()
 	_spawn_mushrooms()
 	player.global_position = PLAYER_SPAWN
-	Globals.has_codex_soul = true
+	kael.global_position = KAEL_POSITION
+	gateway_stone.global_position = GATEWAY_STONE_POSITION
+	call_deferred("_start_intro")
+
+func _process(_delta: float) -> void:
+	if Globals.input_locked:
+		_set_nearby_interaction(&"")
+		return
+	var kael_distance := player.global_position.distance_to(kael.global_position)
+	var stone_distance := player.global_position.distance_to(gateway_stone.global_position)
+	if kael_distance <= INTERACTION_RANGE and kael_distance <= stone_distance:
+		_set_nearby_interaction(&"kael")
+	elif stone_distance <= INTERACTION_RANGE:
+		_set_nearby_interaction(&"gateway")
+	else:
+		_set_nearby_interaction(&"")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if Globals.input_locked or not event.is_action_pressed("interact"):
+		return
+	match _nearby_interaction:
+		&"kael":
+			_interact_with_kael()
+		&"gateway":
+			_interact_with_gateway()
+
+func _start_intro() -> void:
+	Globals.set_quest_stage(Globals.QuestStage.MEET_KAEL)
+	Globals.dialogue_requested.emit("Fréquence inconnue", "...Hermes ? Si tu m'entends, trouve le vieux Kael. Le village n'est plus seul.")
+
+func _set_nearby_interaction(kind: StringName) -> void:
+	if _nearby_interaction == kind:
+		return
+	_nearby_interaction = kind
+	match kind:
+		&"kael":
+			Globals.interaction_hint_changed.emit("[E] Parler à Maître Kael")
+		&"gateway":
+			Globals.interaction_hint_changed.emit("[E] Toucher la Pierre Gateway")
+		_:
+			Globals.interaction_hint_changed.emit("")
+
+func _interact_with_kael() -> void:
+	match Globals.quest_stage:
+		Globals.QuestStage.MEET_KAEL, Globals.QuestStage.ARRIVAL:
+			Globals.has_codex_soul = true
+			Globals.set_quest_stage(Globals.QuestStage.PURGE_GLITCHES)
+			Globals.dialogue_requested.emit("Maître Kael", "Enfin ! J'allais finir ma sieste. Prends le Codex Soul et purifie trois Glitchs — ensuite la pierre acceptera ta fréquence.")
+		Globals.QuestStage.PURGE_GLITCHES:
+			Globals.dialogue_requested.emit("Maître Kael", "Le Codex ne coupe pas du métal, petite. Il coupe les mensonges. Trois Glitchs, pas deux et demi.")
+		Globals.QuestStage.ACTIVATE_GATEWAY:
+			Globals.dialogue_requested.emit("Maître Kael", "La pierre à l'est pulse déjà. Pose la main dessus... et évite de promettre ton âme au premier signal venu.")
+		Globals.QuestStage.COMPLETE:
+			Globals.dialogue_requested.emit("Maître Kael", "Le lien tient. Maintenant demande à Écho pourquoi elle connaît ton vrai nom — moi, je retourne travailler très fort les yeux fermés.")
+
+func _interact_with_gateway() -> void:
+	if Globals.quest_stage < Globals.QuestStage.ACTIVATE_GATEWAY:
+		Globals.dialogue_requested.emit("Pierre Gateway", "La rune reste froide. Une fréquence manque encore au Codex.")
+	elif Globals.gateway_linked:
+		Globals.dialogue_requested.emit("Écho", "Le lien est ouvert. Appuie sur [T] quand tu veux m'entendre.")
+	else:
+		Globals.dialogue_requested.emit("Pierre Gateway", "Synchronisation de l'âme numérique...")
+		Globals.gateway_link_requested.emit()
 
 # --- Construction du TileSet en code ---
 # Le spritesheet forest-tiles.png fait 64×48 (4 cols × 3 rows de tuiles 16×16).
@@ -40,6 +108,8 @@ func _build_tileset() -> void:
 	
 	var ts := TileSet.new()
 	ts.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
+	ts.add_physics_layer()
+	ts.set_physics_layer_collision_layer(0, 4)
 	# Une seule source atlas (source_id = 0)
 	var src := TileSetAtlasSource.new()
 	src.texture = tex
@@ -64,9 +134,11 @@ func _generate_map() -> void:
 			if x == 0 or y == 0 or x == WORLD_W - 1 or y == WORLD_H - 1:
 				row.append(T.TREE)
 				continue
-			var r := rng.randf()
 			var dist := Vector2(x - WORLD_W / 2.0, y - WORLD_H / 2.0).length()
-			if r < 0.08:
+			var r := rng.randf()
+			if dist < 7:
+				row.append(T.PATH)
+			elif r < 0.08:
 				row.append(T.TREE)
 			elif r < 0.11:
 				row.append(T.BUSH)
@@ -87,15 +159,17 @@ func _generate_map() -> void:
 			else:
 				row.append(T.GRASS_B)
 		map_data.append(row)
-	# 4 chemins depuis le centre
+	# Place centrale d'Écho-Verdant et quatre chemins lisibles.
 	var cx := int(WORLD_W / 2)
 	var cy := int(WORLD_H / 2)
-	for i in range(1, 25):
+	for y in range(cy - 6, cy + 7):
+		for x in range(cx - 9, cx + 10):
+			map_data[y][x] = T.PATH if abs(x - cx) <= 1 or abs(y - cy) <= 1 else T.GRASS_A
+	for i in range(1, 28):
 		for pos in [[cx + i, cy], [cx - i, cy], [cx, cy + i], [cx, cy - i]]:
 			var px: int = pos[0]
 			var py: int = pos[1]
-			if map_data[py] and map_data[py][px] == T.TREE:
-				map_data[py][px] = T.PATH
+			map_data[py][px] = T.PATH
 
 # --- Pose des tuiles ---
 func _build_tilemap() -> void:
@@ -111,7 +185,7 @@ func _build_tilemap() -> void:
 	_set_tile_collision(T.WATER_B)
 	_set_tile_collision(T.STONE)
 	_set_tile_collision(T.BUSH)
-	tilemap.set_layer_ysort_enabled(0, true)
+	tilemap.set_layer_y_sort_enabled(0, true)
 
 func _set_tile_collision(tile_id: int) -> void:
 	var ts := tilemap.tile_set
@@ -127,12 +201,12 @@ func _set_tile_collision(tile_id: int) -> void:
 		# Collision polygon simplifié : un rectangle = tuile entière
 		data.add_collision_polygon(0)  # layer 0 (physics)
 		var pts := PackedVector2Array([
-			Vector2(0, 0),
-			Vector2(TILE_SIZE, 0),
-			Vector2(TILE_SIZE, TILE_SIZE),
-			Vector2(0, TILE_SIZE),
+			Vector2(-TILE_SIZE / 2.0, -TILE_SIZE / 2.0),
+			Vector2(TILE_SIZE / 2.0, -TILE_SIZE / 2.0),
+			Vector2(TILE_SIZE / 2.0, TILE_SIZE / 2.0),
+			Vector2(-TILE_SIZE / 2.0, TILE_SIZE / 2.0),
 		])
-		var n := data.get_collision_polygon_count(0) - 1
+		var n: int = data.get_collision_polygons_count(0) - 1
 		data.set_collision_polygon_points(0, n, pts)
 
 # --- Spawn ennemis ---

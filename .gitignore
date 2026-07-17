@@ -1,6 +1,7 @@
 # Godot
 .godot/
 *.import
+*.gd.uid
 export_presets.cfg
 /builds/
 *.exe
